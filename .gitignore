@@ -1,0 +1,41 @@
+# Ambientes virtuais
+.venv/
+.venv311/
+venv/
+__pycache__/
+
+# Streamlit cache
+cache/
+pandasai.log
+
+# Pastas de uploads temporários
+uploaded_files/
+temp_chart.png
+
+# Exportações / gráficos gerados
+exports/
+
+# Arquivos de configuração local (chaves, secrets)
+.secrets.toml
+.env
+*.env
+
+# VSCode e IDEs
+.vscode/
+*.code-workspace
+
+# Arquivos Python compilados
+*.pyc
+*.pyo
+
+# Logs
+*.log
+
+# Outros temporários
+*.tmp
+*.bak
+
+# chaves
+.streamlit
+
+rascunho app.txt
