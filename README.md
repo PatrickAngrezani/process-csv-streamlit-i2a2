@@ -26,5 +26,7 @@ Projeto: interface Streamlit para upload de CSVs, indexação por chunking, busc
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate      
+.venv\Scripts\activate
+pip install requirements.txt
+streamlit run app.py
 ```

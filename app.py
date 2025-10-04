@@ -8,6 +8,9 @@ from io import BytesIO
 import re
 import numpy as np
 
+from io import BytesIO
+from PIL import Image
+
 from pandasai import SmartDataframe
 from pandasai.llm import OpenAI as PandasAIOpenAI
 import openai
@@ -242,9 +245,7 @@ def temporal_patterns_fallback(df):
             df_time["_parsed_time"] = pd.to_datetime(df_time[time_col], errors="coerce")
             df_time = df_time.dropna(subset=["_parsed_time"])
             # convert to numeric ordinal for correlation (seconds)
-            time_numeric = (
-                df_time["_parsed_time"].view("int64") // 10**9
-            ) 
+            time_numeric = df_time["_parsed_time"].view("int64") // 10**9
             # analyze numeric cols
             for col in df_time.select_dtypes(include="number").columns:
                 if col == "_parsed_time":
@@ -604,22 +605,29 @@ if uploaded_file:
                                     if isinstance(resposta, pd.DataFrame)
                                     else resposta.to_frame()
                                 )
+                            elif isinstance(resposta, plt.Figure):
+                                # Salva em memória e mostra
+                                buf = BytesIO()
+                                resposta.savefig(buf, format="png", bbox_inches="tight")
+                                buf.seek(0)
+                                st.image(buf, caption="Gráfico gerado")
+                                plt.close(resposta)
                             elif (
                                 isinstance(resposta, dict)
                                 and resposta.get("type") == "plot"
                             ):
                                 val = resposta.get("value")
                                 if isinstance(val, plt.Figure):
-                                    st.pyplot(val)
-                                elif isinstance(val, str) and os.path.exists(val):
-                                    st.image(val)
-                                else:
+                                    buf = BytesIO()
+                                    val.savefig(buf, format="png", bbox_inches="tight")
+                                    buf.seek(0)
+                                    st.image(buf, caption="Gráfico gerado")
+                                    plt.close(val)
+                                elif isinstance(val, str):
                                     try:
-                                        st.image(val)
+                                        st.image(val, caption="Gráfico gerado")
                                     except Exception:
                                         st.write("Formato de plot não reconhecido.")
-                            elif isinstance(resposta, plt.Figure):
-                                st.pyplot(resposta)
                             elif isinstance(resposta, (list, dict)):
                                 st.json(resposta)
                             else:
