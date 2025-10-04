@@ -3,7 +3,7 @@
 Projeto: interface Streamlit para upload de CSVs, indexação por chunking, busca semântica com FAISS e respostas por LLM (OpenAI).
 
 **Acesse o app online:**  
-👉 [https://patrickangrezani-streamlit-rag-csv.streamlit.app](https://patrickangrezani-streamlit-rag-csv.streamlit.app)
+👉 [https://patrickangrezani-rag-csv.streamlit.app/](https://patrickangrezani-rag-csv.streamlit.app/)
 
 ## Requisitos
 - Python 3.11
