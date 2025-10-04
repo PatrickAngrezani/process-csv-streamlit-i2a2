@@ -598,7 +598,18 @@ if uploaded_file:
                         if resposta is not None:
                             st.write("💡 **Resposta:**")
                             if isinstance(resposta, (str, int, float)):
-                                st.write(resposta)
+                                if isinstance(
+                                    resposta, str
+                                ) and resposta.lower().endswith(
+                                    (".png", ".jpg", ".jpeg")
+                                ):
+                                    try:
+                                        img = Image.open(resposta)
+                                        st.image(img, caption="Gráfico gerado")
+                                    except Exception as e:
+                                        st.write("Não foi possível abrir o gráfico:", e)
+                                else:
+                                    st.write(resposta)
                             elif isinstance(resposta, (pd.DataFrame, pd.Series)):
                                 st.dataframe(
                                     resposta
