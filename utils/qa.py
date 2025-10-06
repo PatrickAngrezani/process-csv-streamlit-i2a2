@@ -1,4 +1,3 @@
-# utils/qa.py
 import os
 import openai
 from typing import List, Dict, Any
@@ -40,7 +39,6 @@ def build_context_from_results(results: List[Dict[str, Any]]) -> str:
             parts.append(f"CHUNK {i} (rows {meta.get('start_row')} - {meta.get('end_row')}):\n{meta.get('text','')[:2000]}")
     return "\n\n".join(parts)
 
-# High level QA
 class CSVQASystem:
     def __init__(self, vector_store: FaissVectorStore, embed_fn=None):
         self.vs = vector_store
@@ -77,8 +75,6 @@ class CSVQASystem:
         plot_info = None
 
         if wants_plot:
-            # tentaremos gerar um gráfico simples: histograma da primeira coluna numérica
-            # localizamos a file & rows no primeiro contexto (se existir)
             if contexts:
                 meta0 = contexts[0]
                 file = meta0.get("file")

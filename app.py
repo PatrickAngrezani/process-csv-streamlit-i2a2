@@ -6,6 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from io import BytesIO
 import re
+import csv
 import numpy as np
 
 from io import BytesIO
@@ -14,7 +15,6 @@ from PIL import Image
 from pandasai import SmartDataframe
 from pandasai.llm import OpenAI as PandasAIOpenAI
 import openai
-
 from pandasai.exceptions import NoCodeFoundError, NoResultFoundError
 
 os.makedirs("exports/charts", exist_ok=True)
@@ -60,7 +60,21 @@ def normalize_response(resp):
 @st.cache_data
 def load_and_clean_data(file_bytes):
     file_like_object = BytesIO(file_bytes)
-    df = pd.read_csv(file_like_object, sep=",", engine="python", quoting=3)
+
+    # Lê uma pequena amostra para detectar o delimitador
+    sample = file_like_object.read(2048).decode("utf-8", errors="ignore")
+    file_like_object.seek(0)
+
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=[",", ";", "\t"])
+        sep = dialect.delimiter
+        print(f"dialect: {dialect}; sep: {sep}")
+    except csv.Error:
+        sep = ","  # fallback padrão
+
+    st.info(f"🔎 Delimitador detectado automaticamente: `{sep}`")
+
+    df = pd.read_csv(file_like_object, sep=sep, engine="python", quoting=3)
 
     df.columns = (
         df.columns.astype(str)
@@ -85,9 +99,12 @@ def load_and_clean_data(file_bytes):
         except Exception:
             continue
 
+    df.reset_index(drop=True, inplace=True)
+
     return df, converted_cols
 
-# --- Configuração do LLM ---
+
+# configura LLM
 try:
     llm = PandasAIOpenAI(api_token=api_key, model="gpt-3.5-turbo")
 except Exception:
@@ -260,7 +277,6 @@ def temporal_patterns_fallback(df):
                         "corr_with_time": float(corr),
                         "direction": direction,
                     }
-            # seasonal: monthly mean if dt spread > 60 days and enough points
             if (
                 df_time["_parsed_time"].max() - df_time["_parsed_time"].min()
             ).days >= 60 and len(df_time) >= 20:
@@ -555,7 +571,11 @@ if uploaded_file:
                                     valor, metrica = df[col].max(), "máximo"
                                 elif "mínimo" in qlow or "minimo" in qlow:
                                     valor, metrica = df[col].min(), "mínimo"
-                                resposta = f"📊 O {metrica} da coluna `{col}` é: **{valor:.2f}**"
+
+                                if isinstance(valor, (int, float)):
+                                    resposta = f"📊 O {metrica} da coluna `{col}` é: **{valor:.2f}**"
+                                else:
+                                    resposta = f"📊 O {metrica} da coluna `{col}` é: **{valor}**"
                                 st.write(resposta)
                             else:
                                 st.warning(f"A coluna `{col}` não foi encontrada.")
@@ -575,10 +595,12 @@ if uploaded_file:
                                     "Sempre gere código Python válido e termine com `result = ...`.\n"
                                     "Nunca use bibliotecas externas (os, io, sys, base64).\n"
                                     "Para gráficos, use matplotlib/seaborn e finalize com `result = fig`."
+                                    f"As colunas disponíveis são: {', '.join(df.columns)}. "
+                                    "Use apenas essas colunas e gere código Python válido que termine com `result = ...`."
                                 ),
                                 "save_charts": False,
                                 "enable_cache": False,
-                                "enforce_code_execution_safety": False,
+                                "enforce_code_execution_safety": True,
                                 "custom_plots": True,
                             },
                         )
@@ -591,9 +613,13 @@ if uploaded_file:
                                 "Tente reformular ou use as opções automáticas."
                             )
                         except Exception as e:
-                            st.error(f"Erro inesperado no PandasAI: {e}")
-                            resposta = f"[Erro PandasAI: {e}]"
-
+                                if "KeyError" in str(e):
+                                    missing_col = re.search(r"KeyError:\s*'([^']+)'", str(e))
+                                    col_name = missing_col.group(1) if missing_col else "desconhecida"
+                                    st.error(f"❌ A coluna '{col_name}' não existe no dataset.")
+                                else:
+                                    st.error(f"Erro inesperado no PandasAI: {e}")
+                                    resposta = f"[Erro PandasAI: {e}]"
                         # Renderização de resposta do PandasAI
                         if resposta is not None:
                             st.write("💡 **Resposta:**")
